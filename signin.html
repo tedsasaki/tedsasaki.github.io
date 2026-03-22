@@ -383,9 +383,7 @@
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      msg.className = 'status-msg success';
-      msg.textContent = 'サインイン成功 / Sign-in successful. Welcome!';
-      // TODO: redirect to main app page after sign-in
+      window.location.href = 'index.html';
     } catch (error) {
       let errText = 'サインインに失敗しました / Sign-in failed. Please check your email and password.';
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
