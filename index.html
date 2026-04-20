@@ -786,7 +786,7 @@ window.openMember = async (memberId) => {
   // load progress entries
   const entriesSnap = await getDocs(query(collection(db,'members',memberId,'entries'), orderBy('createdAt','desc')));
   const entries = [];
-  entriesSnap.forEach(d => entries.push(d.data()));
+  entriesSnap.forEach(d => entries.push({ id: d.id, ...d.data() }));
 
   const entriesEl = document.getElementById('modal-progress-entries');
   if (entries.length === 0) {
@@ -794,8 +794,13 @@ window.openMember = async (memberId) => {
   } else {
     entriesEl.innerHTML = entries.map(e => {
       const dt = e.createdAt ? new Date(e.createdAt.seconds*1000).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
-      return `<div class="progress-entry">
-        <div class="entry-meta"><span>${dt}</span><span>by ${e.updatedBy||'—'}</span></div>
+      const canDelete = currentUserRole === 'admin' || e.updatedBy === currentUser.email;
+      const deleteBtn = canDelete ? `<button onclick="deleteEntry('${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--ink-faint);font-size:16px;padding:0 4px;margin-left:auto;flex-shrink:0;" title="削除 / Delete">✕</button>` : '';
+      return `<div class="progress-entry" id="entry-${e.id}">
+        <div class="entry-meta" style="display:flex;align-items:center;">
+          <div style="display:flex;gap:10px;flex:1;"><span>${dt}</span><span>by ${e.updatedBy||'—'}</span></div>
+          ${deleteBtn}
+        </div>
         <div class="entry-text">${e.text||''}</div>
       </div>`;
     }).join('');
@@ -957,6 +962,19 @@ function showMsg(el, type, text) {
   el.textContent = text;
   setTimeout(() => el.className = 'status-msg', 4000);
 }
+
+// ── DELETE PROGRESS ENTRY ──
+window.deleteEntry = async (entryId) => {
+  if (!confirm('この記録を削除しますか？
+Delete this progress entry?')) return;
+  try {
+    await deleteDoc(doc(db, 'members', currentMemberId, 'entries', entryId));
+    await loadMembers();
+    openMember(currentMemberId);
+  } catch(e) {
+    alert('Error deleting entry. / 削除中にエラーが発生しました。');
+  }
+};
 
 // ── EDIT MEMBER ──
 window.openEditMember = () => {
